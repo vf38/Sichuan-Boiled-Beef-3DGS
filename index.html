@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -435,34 +437,15 @@
                             const parser = new DOMParser();
                             const doc = parser.parseFromString(html, 'text/html');
                             const links = doc.querySelectorAll('a[href$=".ply"]');
-                            let latestFile = null;
-                            let latestTime = 0;
                             links.forEach(link => {
                                 const filename = link.getAttribute('href');
                                 if (filename !== 'scene.compressed.ply') {
                                     const option = document.createElement('option');
                                     option.value = filename;
-                                    option.text = filename.replace('.ply', '');
+                                    option.text = filename;
                                     plySelector.appendChild(option);
-
-                                    // Get file modification time
-                                    fetch(filename, { method: 'HEAD' })
-                                        .then(response => {
-                                            const lastModified = new Date(response.headers.get('Last-Modified')).getTime();
-                                            if (lastModified > latestTime) {
-                                                latestTime = lastModified;
-                                                latestFile = filename;
-                                            }
-                                        });
                                 }
                             });
-                            
-                            // Set default value to latest file
-                            if (latestFile) {
-                                plySelector.value = latestFile;
-                                const event = new Event('change');
-                                plySelector.dispatchEvent(event);
-                            }
                         });
                 }
                 addPlyFilesToSelector();
