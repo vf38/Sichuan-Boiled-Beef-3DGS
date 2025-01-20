@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -84,7 +85,7 @@
         </script>
         <script type="module" src="https://cdn.jsdelivr.net/npm/@playcanvas/web-components@0.1.10/dist/pwc.mjs"></script>
     </head>
-    <body>
+    <body >
         <pc-app antialias="false" depth="false" high-resolution="true" stencil="false">
             <pc-asset id="camera-controls" src="https://cdn.jsdelivr.net/npm/playcanvas@2.3.1/scripts/esm/camera-controls.mjs" preload></pc-asset>
             <pc-asset id="xr-controllers" src="https://cdn.jsdelivr.net/npm/playcanvas@2.3.1/scripts/esm/xr-controllers.mjs" preload></pc-asset>
@@ -160,6 +161,10 @@
                 </div>
             </div>
         </div>
+        
+        <select id="plySelector" style="position: absolute; bottom: max(16px, env(safe-area-inset-bottom)); left: max(16px, env(safe-area-inset-left)); background: rgba(255, 255, 255, 0.9); border: 1px solid #ddd; border-radius: 8px; padding: 8px; color: #2c3e50; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);">
+            <option value="scene.compressed.ply">scene.compressed.ply</option>
+        </select>
 
         <script type="module">
             import { BoundingBox, Color, Script, Vec3 } from 'playcanvas';
@@ -399,6 +404,51 @@
                 container.appendChild(infoButton);
 
                 document.body.appendChild(container);
+                
+                // Ply file selector
+                const plySelector = document.getElementById('plySelector');
+                plySelector.addEventListener('change', async (event) => {
+                    const selectedPly = event.target.value;
+                    const splatEntity = await document.querySelector('pc-entity[name="splat"]').ready();
+                    const splat = splatEntity.entity.findComponent('splat');
+                    const asset = app.assets.find(asset => asset.type === 'gsplat' && asset.file?.filename === selectedPly);
+                    if (asset) {
+                        splat.asset = asset;
+                    } else {
+                        const newAsset = new pc.Asset(selectedPly, 'gsplat', { url: selectedPly });
+                        app.assets.add(newAsset);
+                        newAsset.on('load', () => {
+                            splat.asset = newAsset;
+                        });
+                        app.assets.load(newAsset);
+                    }
+                    
+                    const frameSceneScript = entity.script.FrameScene;
+                    if (frameSceneScript) {
+                        frameSceneScript.resetCamera(frameSceneScript.calcBound());
+                    }
+                });
+                
+                // Add ply files to selector
+                const addPlyFilesToSelector = () => {
+                    fetch('./')
+                        .then(response => response.text())
+                        .then(html => {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            const links = doc.querySelectorAll('a[href$=".ply"]');
+                            links.forEach(link => {
+                                const filename = link.getAttribute('href');
+                                if (filename !== 'scene.compressed.ply') {
+                                    const option = document.createElement('option');
+                                    option.value = filename;
+                                    option.text = filename;
+                                    plySelector.appendChild(option);
+                                }
+                            });
+                        });
+                }
+                addPlyFilesToSelector();
             });
         </script>
     </body>
